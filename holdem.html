@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: green;
+        }
+
+        img {
+            width: 10%;
+            height: auto;
+        }
+
+        #middle {
+            text-align: center;
+        }
+
+        #bottom {
+            text-align: center;
+            bottom: 75%;
+        }
+
+        #text {
+            text-align: center;
+            top: 25%;
+        }
+
+        #buttons {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="top" style="text-align:center">
+        <img id="back1" src="cards/back.jpg" style="display:none">
+        <img id="back2" src="cards/back.jpg" style="display:none">
+    </div>
+    <h2 id="text">Welcome to Carribean Hold'em</h2>
+    <p id="rules">Your cards will be on the bottom of the screen. The dealer's are at the top and in the center is the shared table. This
+        is Casino Holdem rules. You choose your ante and after the flop you decide to call for double your ante amount or
+        fold. If you call, two more cards are placed on the board and the dealer shows his cards. If the dealer has any play
+        less than a pair of 4's, he automatically loses and you don't recieve chips on your call bet. You will recieve a
+        multiplier of your original ante upon winning depending on the rarity of your hand, the standard being 1:1 for a
+        straight or less. Version notes: Cash out feature is currently unavailable.
+    </p>
+    <div id="buttons">
+        <button id="play" onclick="play()">Play</button>
+        <input id="chips" type="number" style="display:none">
+        <button id="purchase" style="display:none" onclick="purchase()">Purchase</button>
+        <input id="ante" type="number" style="display:none">
+        <button id="anteButton" style="display:none" onclick="anteope()">Ante</button>
+        <button id="fold" style="display:none" onclick="fold()">Fold</button>
+        <button id="call" style="display:none" onclick="call()">Call</button>
+        <button id="continue" style="display:none" onclick="cont()">Continue playing</button>
+        <button id="cashOut" style="display:none">Cash out</button>
+        <p id="errorField"></p>
+        <h3 id="chipCount" style="text-align: right">Chips: 0</h3>
+    </div>
+    <div id="middle"></div>
+    <div id="bottom"></div>
+
+
+    <script>
+        var suitName = ["Spades", "Clubs", "Diamonds", "Hearts"];
+        var rankName = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"];
+        var deck = buildDeck();
+        var handScore = ['High Card only', 'Pair', 'Two Pair', 'Three of a Kind', 'Straight', 'Flush', 'Full House', 'Four of a Kind', 'Straight Flush', 'Royal Flush'];
+        var ante, chips, response, straightCheck, sDupCheck, flushCheck;
+        var drawn;
+        var c1, c2, d1, d2, f1, f2, f3, f4, f5;
+        var pageText = document.getElementById("text");
+        var anteField = document.getElementById("ante");
+        function play() {
+            document.getElementById("rules").style.display = "none";
+            document.getElementById("play").style.display = "none";
+            pageText.textContent = "Chips are a dollar a piece, how many would you like to buy?";
+            let chipNumba = document.getElementById("chips");
+            chipNumba.style.display = "inline-block";
+            document.getElementById("purchase").style.display = "inline-block";
+        }
+
+        function purchase() {
+            let chipNumba = document.getElementById("chips");
+            chips = parseInt(chipNumba.value);
+            document.getElementById("purchase").style.display = "none";
+            document.getElementById("chips").style.display = "none";
+            var chipDisplay = document.getElementById("chipCount");
+            chipDisplay.textContent = `Chips: ${chips}`;
+            document.getElementById("ante").style.display = "inline-block";
+            document.getElementById("text").textContent = "Choose your ante amount.";
+            document.getElementById("anteButton").style.display = "inline-block";
+        }
+
+        function anteope() {
+            ante = parseInt(document.getElementById("ante").value);
+            var errorField = document.getElementById("errorField");
+            if (ante * 3 > chips) {
+                errorField.textContent = "You're betting above your paygrade. Lower the ante.";
+                return;
+            }
+            else if (ante < 0) {
+                errorField.textContent = "I'm not going to give you money if you lose.";
+                return;
+            }
+            else {
+                errorField.textContent = "";
+                straightCheck = false, sDupCheck = false, flushCheck = false;
+                drawn = [];
+                chips -= ante;
+                c1 = draw(), d1 = draw(), c2 = draw(), d2 = draw(), f1 = draw(), f2 = draw(), f3 = draw();
+                let mid = document.getElementById("middle");
+                let f1Pic = document.createElement("img"), f2Pic = document.createElement("img"), f3Pic = document.createElement("img");
+                f1Pic.src = f1.pic;
+                f2Pic.src = f2.pic;
+                f3Pic.src = f3.pic;
+                mid.appendChild(f1Pic);
+                mid.appendChild(f2Pic);
+                mid.appendChild(f3Pic);
+                let bott = document.getElementById("bottom");
+                let c1Pic = document.createElement("img"), c2Pic = document.createElement("img");
+
+                c1Pic.src = c1.pic;
+                c2Pic.src = c2.pic;
+                bott.appendChild(c1Pic);
+                bott.appendChild(c2Pic);
+                document.getElementById("back1").style.display = "inline-block";
+                document.getElementById("back2").style.display = "inline-block";
+                pageText.textContent = `Would you like to call the dealer for ${ante * 2} or fold?`;
+                document.getElementById("anteButton").style.display = "none";
+                anteField.style.display = "none";
+                document.getElementById("call").style.display = "inline-block";
+                document.getElementById("fold").style.display = "inline-block";
+            }
+        }
+        function fold() {
+            document.getElementById("back1").style.display = "none";
+            document.getElementById("back2").style.display = "none";
+            document.getElementById("call").style.display = "none";
+            document.getElementById("fold").style.display = "none";
+            let imgArr = Array.from(document.getElementsByTagName("img"));
+            for (let image of imgArr) {
+                if (image.id != "back1" && image.id != "back2")
+                    image.remove();
+            }
+            document.getElementById("chipCount").textContent = `Chips: ${chips}`;
+            pageText.textContent = "Cash out now or continue playing?";
+            document.getElementById("continue").style.display = "inline-block";
+            document.getElementById("cashOut").style.display = "inline-block";
+        }
+        function cont() {
+            document.getElementById("continue").style.display = "none";
+            document.getElementById("cashOut").style.display = "none";
+            let imgArr = Array.from(document.getElementsByTagName("img"));
+            if (imgArr.length > 0)
+                for (let image of imgArr) {
+                    if (image.id != "back1" && image.id != "back2")
+                        image.remove();
+                }
+            pageText.textContent = "Choose your ante amount.";
+            anteField.style.display = "inline-block";
+            document.getElementById("anteButton").style.display = "inline-block";
+        }
+        function call() {
+            document.getElementById("back1").style.display = "none";
+            document.getElementById("back2").style.display = "none";
+            chips -= ante * 2;
+            f4 = draw(), f5 = draw();
+            let mid = document.getElementById("middle");
+            let f4Pic = document.createElement("img"), f5Pic = document.createElement("img");
+            f4Pic.src = f4.pic;
+            f5Pic.src = f5.pic;
+            let toppis = document.getElementById("top");
+            mid.appendChild(f4Pic);
+            mid.appendChild(f5Pic);
+            let d1Pic = document.createElement("img"), d2Pic = document.createElement("img");
+            d1Pic.src = d1.pic;
+            d2Pic.src = d2.pic;
+            toppis.appendChild(d1Pic);
+            toppis.appendChild(d2Pic);
+            let playerCards = [c1, c2, f1, f2, f3, f4, f5];
+            let compCards = [d1, d2, f1, f2, f3, f4, f5];
+            let playerMatches = buildMatch(playerCards);
+            playerMatches = addStraights(playerCards, playerMatches);
+            playerMatches = checkStraightFlush(playerCards, playerMatches);
+            let playerMatch = pickBest(playerMatches);
+            flushCheck = false;
+            straightCheck = false;
+            let compMatches = buildMatch(compCards);
+            compMatches = addStraights(compCards, compMatches);
+            compMatches = checkStraightFlush(compCards, compMatches);
+            let compMatch = pickBest(compMatches);
+            var tied = false;
+            if (compMatch.power === 0) {
+                var win = true;
+            }
+            else if (compMatch.power === 1 && compMatch.rank < 2) {
+                var win = true;
+            }
+            else if (playerMatch.power === compMatch.power) {
+                var win = tie(playerMatch, compMatch);
+                tied = true;
+            }
+            else if (playerMatch.power > compMatch.power) {
+                var win = true;
+            }
+            else { var win = false; }
+
+
+
+            if (win === true) {
+                if (playerMatch.power < 5) {
+                    chips += ante * 2;
+                    var ratio = '1:1';
+                }
+                if (playerMatch.power === 5) {
+                    chips += ante * 3;
+                    var ratio = '2:1';
+                }
+                if (playerMatch.power === 6) {
+                    chips += ante * 4;
+                    var ratio = '3:1';
+                }
+                if (playerMatch.power === 7) {
+                    chips += ante * 11;
+                    var ratio = '10:1';
+                }
+                if (playerMatch.power === 8) {
+                    chips += ante * 21;
+                    var ratio = '20:1';
+                }
+                if (playerMatch.power === 9) {
+                    chips += ante * 101;
+                    var ratio = '100:1';
+                }
+
+                if (tied === false) {
+                    pageText.textContent = `Your ${handScore[playerMatch.power]} beats the dealer's ${handScore[compMatch.power]} granting you a win of ${ratio} of your ante. `;
+                }
+                if (tied === true) {
+                    pageText.textContent = `You both have a ${handScore[playerMatch.power]} and you have the High Card advantage, you win ${ratio} of your ante. `;
+                }
+                if (compMatch.power === 0 || (compMatch.power === 1 && compMatch.rank < 2)) {
+                    chips += ante * 2;
+                    pageText.appendChild(document.createTextNode("His hand did not qualify so your call bet is returned to you. "));
+                }
+                else {
+                    chips += ante * 4;
+                    pageText.appendChild(document.createTextNode("You also win 1:1 of your call bet. "));
+                }
+            }
+            if (win === false) {
+                if (tied === false)
+                    pageText.textContent = `Your ${handScore[playerMatch.power]} doesn't match up to the dealer's ${handScore[compMatch.power]}. You lose your bets. `;
+                if (tied === true)
+                    pageText.textContent = `You both have a ${handScore[playerMatch.power]} but the dealer has High Card advantage, you lose your bets. `;
+            }
+            if (win === 'push') {
+                chips += ante * 3;
+                pageText.textContent = "You pushed. ";
+            }
+            document.getElementById("fold").style.display = "none";
+            document.getElementById("call").style.display = "none";
+            document.getElementById("chipCount").textContent = `Chips: ${chips}`;
+            pageText.appendChild(document.createTextNode('Would you like to play again?'));
+            document.getElementById("continue").style.display = "inline-block";
+            document.getElementById("cashOut").style.display = "inline-block";
+        }
+
+
+
+        function draw() {
+            do {
+                var n = Math.floor(Math.random() * 52);
+            }
+            while (drawn.includes(deck[n]));
+            drawn.push(deck[n]);
+            return deck[n];
+        }
+        function buildMatch(pCards) {
+            let matches = [];
+            for (let i = pCards.length - 1; i >= 0; i--) {
+                let flushHand = [pCards[i]];
+                let matchHand = [];
+                let mRank = 0, mSuit = 0, skip = false;
+                for (let j = pCards.length - 1; j >= 0; j--) {
+                    if (j == i) continue;
+                    if (pCards[i].rank == pCards[j].rank) mRank++;
+                    else matchHand.push(pCards[j]);
+                    if (pCards[i].suit == pCards[j].suit && flushCheck === false) {
+                        mSuit++;
+                        flushHand.push(pCards[j]);
+                    }
+                }
+
+                if (mRank > 0) {
+                    for (let x = 0; x < matches.length; x++) {      //skip adding match pair from each card in match
+                        if (pCards[i].rank === matches[x].rank && (matches[x].power === 1 || matches[x].power === 3 || matches[x].power === 7)) {
+                            skip = true;
+                        }                    
+}
+                    if (skip === false) {
+                        if (mRank == 1) {
+                            matchHand.sort(function (a, b) { return b.rank - a.rank; });
+                            matchHand.splice(3);
+                            matches.push({ power: 1, rank: pCards[i].rank, cards: matchHand });
+                        }
+                        if (mRank == 2) {
+                            matchHand.sort(function (a, b) { return b.rank - a.rank; });
+                            matchHand.splice(2);
+                            matches.push({ power: 3, rank: pCards[i].rank, cards: matchHand });
+                        }
+                        if (mRank == 3) {
+                            matchHand.sort(function (a, b) { return b.rank - a.rank; });
+                            matchHand.splice(1);
+                            matches.push({ power: 7, rank: pCards[i].rank, cards: matchHand });
+                        }
+                        console.table(matchHand);
+                    }
+                }
+                if (flushCheck === false) {
+                    if (mSuit == 4) {
+                        flushHand.sort(function (a, b) { return b.rank - a.rank });
+                        matches.push({ power: 5, cards: flushHand });
+                        flushCheck = true;
+                    }
+                    if (mSuit > 4) {
+                        flushHand.sort(function (a, b) { return b.rank - a.rank });
+                        matches.push({ power: 5, cards: flushHand.splice(5) })
+                        flushCheck = true;
+                    }
+                }
+            }
+            return matches;
+        }
+
+
+        function addStraights(pCards, matchArr) {
+            let matches = matchArr;
+            let iCurr;
+
+            for (let q = pCards.length - 1; q >= 0; q--) {
+                let count = 0;
+                let nextQ = q
+                do {
+                    var countDups = 0;              //Check for multiple of same number in case of potential Straight Flush using wrong one of duplicate. abandoned feature, rewrite.    
+                    for (let i = pCards.length - 1; i >= 0; i--) {
+                        if (pCards[nextQ].rank == pCards[i].rank + 1) {
+                            countDups++;
+                            if (countDups > 1) sDupCheck = true;  //these are pointless unless you wanted to slightly increase performance by not checking dups when not necessary, ignore
+                            iCurr = i;
+                        }
+                        if (pCards[nextQ].rank == 0 && pCards[i].rank == 12 && count == 3) {   //Aces flop for straights
+                            countDups++;
+                            if (countDups > 1) sDupCheck = true;
+                        }
+                    }
+                    if (countDups > 0) {
+                        count++;
+                        if (count == 4) {
+                            straightCheck = true;
+                            matches.push({ power: 4, rank: pCards[q].rank });
+                            break;
+                        }
+                        else nextQ = iCurr;
+                    }
+                } while (countDups > 0);
+            }
+            return matches;
+        }
+
+        function checkStraightFlush(pCards, matchArr) {
+            if (straightCheck && flushCheck) {
+                for (let i = 0; i < pCards.length; i++) {
+                    let nextI = i;
+                    let count = 0;
+                    let found = true;
+                    while (found == true) {
+                        found = false;
+                        for (let j = 0; j < pCards.length; j++) {
+                            if (i == j) continue;
+                            if (pCards[nextI].suit == pCards[j].suit) {
+                                if (pCards[nextI].rank == pCards[j].rank - 1) {
+                                    nextI = j;
+                                    count++;
+                                    found = true;
+                                }
+                            }
+                        }
+                    }
+                    if (count > 3) {
+                        if (pCards[i].rank == 8)
+                            matchArr.push({ power: 9, rank: pCards[i].rank });
+                        else matchArr.push({ power: 8, rank: pCards[i].rank });
+                    }
+                }
+            }
+            return matchArr;
+        }
+
+        function pickBest(matchArr) {
+            for (let i = 0; i < matchArr.length; i++) {
+                for (let j = 0; j < matchArr.length; j++) {
+                    if (i == j) continue;
+                    if (matchArr[j].power == 1 && matchArr[i].power == 1) {
+                        for (let c = 0; c < matchArr[i].cards.length; c++) {
+                            if (matchArr[i].cards[c].rank != matchArr[j].rank) {
+                                var lastCard = matchArr[i].cards[c];
+                                break;
+                            }
+                        }
+                        matchArr.push({ power: 2, rank: matchArr[i].rank, secondaryRank: matchArr[j].rank, cards: [lastCard] });
+                    }
+                    if (matchArr[i].power == 3 && (matchArr[j].power == 1 || matchArr[j].power === 3))
+                        matchArr.push({ power: 6, rank: matchArr[i].rank, secondaryRank: matchArr[j].rank });
+                }
+            }
+            console.table(matchArr);
+            let topPower = { power: 0 };
+            for (let i = 0; i < matchArr.length; i++) {
+                if (matchArr[i].power > topPower.power) {
+                    topPower = matchArr[i];;
+                }
+                if (matchArr[i].power == topPower.power) {
+                    if (matchArr[i].rank > topPower.rank)
+                        topPower = matchArr[i];
+                }
+            }
+            return topPower;
+        }
+
+
+        function tie(pHand, cHand) {
+            if (cHand.power === pHand.power) {
+                if (cHand.power != 5) {
+                    if (pHand.rank > cHand.rank) return true;
+                    if (pHand.rank < cHand.rank) return false;
+                }
+                if (pHand.hasOwnProperty('secondaryRank')) {
+                    if (pHand.secondaryRank > cHand.secondaryRank) return true;
+                    if (pHand.secondaryRank < cHand.secondaryRank) return false;
+                }
+                if (pHand.hasOwnProperty('cards')) {
+                    console.log(pHand.cards);
+                    for (let i = 0; i < pHand.cards.length; i++) {
+                        if (pHand.cards[i].rank > cHand.cards[i].rank) return true;
+                        if (pHand.cards[i].rank < cHand.cards[i].rank) return false;
+                    }
+                }
+                return 'push';
+            }
+            else return 'false call error';
+        }
+
+        function buildDeck() {
+            let deck = [];
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 13; j++) {
+                    deck.push({ suit: i, rank: j, pic: `cards/${rankName[j].toLowerCase()}_of_${suitName[i].toLowerCase()}.png` });
+                }
+            }
+            return deck;
+        }
+    </script>
+</body>
+
+</html>
